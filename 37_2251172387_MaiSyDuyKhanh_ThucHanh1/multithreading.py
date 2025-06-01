@@ -1,49 +1,67 @@
 import threading
-import random
 from datetime import datetime
 
-# Câu 1: Tạo mảng A với N > 100 phần tử số ngẫu nhiên
-N = 150
-A = [random.choice([
-    random.randint(1, 1000),              
-    round(random.uniform(1.0, 1000.0), 2) 
-]) for _ in range(N)]
+# CÂU 1 
+print("=== Câu 1: Tạo mảng A có n = 11 phần tử, phần tử cuối là 1000 ===")
+n = 11
+k = 4
+A = [10, 20, 300, 450, 12, 999, 678, 900, 850, 300, 1000]
+print("Mảng A =", A)
 
-numeric_elements = A  
+# CÂU 2
+print("\n=== Câu 2: Tạo", k, "luồng cùng tìm max toàn bộ mảng ===")
+max_results_all = [None] * k
+lock = threading.Lock()
 
-# Câu 2: Tạo 1 luồng tìm max toàn bộ mảng 
-max_result = None
-results_lock = threading.Lock()
-
-def find_max(thread_id, data):
-    global max_result
+def find_max_all(index, thread_id, data):
     res = max(data)
-    print(f"T{thread_id}: {res} : {datetime.now().strftime('%H:%M:%S')}")
-    with results_lock:
-        max_result = res
+    timestamp = datetime.now().strftime("%H:%M:%S.%f")[:-3]
+    print(f"T{thread_id}:{res}:{timestamp}")
+    with lock:
+        max_results_all[index] = res
 
-# Câu 3: Chia mảng thành 2 phần, tìm max nửa đầu
-mid = len(numeric_elements) // 2
-max_half = None
+threads_all = []
+for i in range(k):
+    t = threading.Thread(target=find_max_all, args=(i, i + 1, A))
+    threads_all.append(t)
+    t.start()
 
-def find_max_half(thread_id, sub_data):
-    global max_half
+for t in threads_all:
+    t.join()
+
+# CÂU 3
+print("\n=== Câu 3: Chia A thành", k, "đoạn riêng rẽ, mỗi luồng tìm max từng đoạn ===")
+chunk_size = n // k
+max_results_chunks = [None] * k
+
+def find_max_chunk(index, thread_id, sub_data):
     res = max(sub_data)
-    print(f"T{thread_id}: {res} : {datetime.now().strftime('%H:%M:%S')}")
-    with results_lock:
-        max_half = res
+    timestamp = datetime.now().strftime("%H:%M:%S.%f")[:-3]
+    print(f"T{thread_id}:{res}:{timestamp}")
+    with lock:
+        max_results_chunks[index] = res
 
-# Tạo và chạy luồng 
-t1 = threading.Thread(target=find_max, args=(1, numeric_elements))    
-t2 = threading.Thread(target=find_max_half, args=(2, numeric_elements[:mid]))  
+threads_chunks = []
+for i in range(k):
+    start = i * chunk_size
+    end = (i + 1) * chunk_size if i < k - 1 else n
+    chunk = A[start:end]
+    t = threading.Thread(target=find_max_chunk, args=(i, i + 1, chunk))
+    threads_chunks.append(t)
+    t.start()
 
-t1.start()
-t2.start()
+for t in threads_chunks:
+    t.join()
 
-t1.join()
-t2.join()
+# CÂU 4
+print("\n=== Câu 4: Luồng chính tổng hợp kết quả ===")
 
-# Câu 4: Luồng chính tổng hợp kết quả
-print("\n--- Kết quả tổng hợp ---")
-print(f"Max toàn bộ: {max_result}")
-print(f"Max nửa đầu: {max_half}")
+print("\n[Max toàn bộ mảng từ mỗi luồng]:")
+for i, val in enumerate(max_results_all):
+    print(f"  T{i + 1}: {val}")
+print(f"=> Max cuối cùng toàn bộ mảng: {max(max_results_all)}")
+
+print("\n[Max từng đoạn (không giao nhau)]:")
+for i, val in enumerate(max_results_chunks):
+    print(f"  Đoạn {i + 1}: {val}")
+print(f"=> Max lớn nhất trong các đoạn: {max(max_results_chunks)}")
