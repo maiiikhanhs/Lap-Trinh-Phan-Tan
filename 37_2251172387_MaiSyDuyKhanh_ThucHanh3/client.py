@@ -1,8 +1,8 @@
 import socket
 import random
 
-HOST = "192.168.1.135"
-PORT = 6349
+HOST = "172.20.10.10"
+PORT = 9999
 N = 10
 
 A = [random.randint(1, 100) for _ in range(N)]
